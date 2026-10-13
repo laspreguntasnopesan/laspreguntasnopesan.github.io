@@ -45,6 +45,16 @@
   li { margin-bottom:.4rem; }
   footer { max-width:620px; margin:0 auto; padding-inline:22px; padding-block:24px 40px; color:var(--suave); font-size:.85rem; border-top:1px solid var(--linea); }
   a { color:var(--rio); }
+  .formulario { display:flex; flex-direction:column; gap:.4rem; margin-top:1.2rem; }
+  .formulario label { font-size:.95rem; color:var(--suave); margin-top:.6rem; }
+  .formulario input[type=text], .formulario input[type=email], .formulario textarea {
+    font:inherit; font-size:1rem; color:var(--tinta); background:transparent; border:1px solid var(--linea);
+    border-radius:6px; padding:.65rem .75rem; width:100%; }
+  .formulario input:focus, .formulario textarea:focus { outline:2px solid var(--rio); outline-offset:1px; }
+  .formulario .casilla { display:flex; gap:.6rem; align-items:flex-start; font-size:.88rem; line-height:1.45; margin:.8rem 0 .6rem; }
+  .formulario .casilla input { margin-top:.25rem; flex-shrink:0; width:1.1rem; height:1.1rem; }
+  .formulario .boton { border:0; font:inherit; font-weight:600; cursor:pointer; align-self:flex-start; }
+  .respuesta { min-height:1.4em; font-size:.95rem; }
 </style>
 </head>
 <body>
@@ -67,7 +77,28 @@
   <section id="lectores">
     <h2>Si has llegado desde el libro</h2>
     <p>Gracias por tenerlo entre las manos. Que alguien abra estas páginas ya es mucho para mí.</p>
-    <p>Muy pronto podrás pedir aquí una dedicatoria personal para tu ejemplar.</p>
+    <p>Si quieres, puedo escribirte una dedicatoria personal para tu ejemplar, o para la persona a quien se lo regalas. Déjame aquí tus datos y te escribiré.</p>
+
+    <!-- Las peticiones llegan por correo a través de FormSubmit (gratis, sin cuenta). -->
+    <form id="dedicatoria" class="formulario" action="https://formsubmit.co/ajax/laspreguntasnopesan@gmail.com" method="POST">
+      <input type="hidden" name="_subject" value="Nueva petición de dedicatoria">
+      <input type="hidden" name="_template" value="table">
+      <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
+      <label for="nombre">Tu nombre</label>
+      <input id="nombre" name="nombre" type="text" required autocomplete="name">
+      <label for="email">Tu correo electrónico</label>
+      <input id="email" name="email" type="email" required autocomplete="email">
+      <label for="para">¿Para quién es la dedicatoria?</label>
+      <input id="para" name="para_quien" type="text" placeholder="Para mí, o el nombre de la persona" required>
+      <label for="mensaje">Algo que quieras contarme (opcional)</label>
+      <textarea id="mensaje" name="mensaje" rows="4" placeholder="Por qué te llevas el libro, a quién se lo regalas…"></textarea>
+      <label class="casilla" for="consentimiento">
+        <input id="consentimiento" name="consentimiento" type="checkbox" value="sí" required>
+        <span>Acepto que el autor use estos datos solo para escribirme la dedicatoria. No se usarán para nada más ni se compartirán.</span>
+      </label>
+      <button class="boton" type="submit">Pedir mi dedicatoria</button>
+      <p id="respuesta" class="respuesta" role="status"></p>
+    </form>
   </section>
 
   <section>
@@ -84,5 +115,26 @@
 <footer>
   © 2026 Francisco Esteban Alonso · Tapa blanda, 62 páginas a color
 </footer>
+<script>
+  // Envía el formulario sin salir de la página y muestra la respuesta debajo del botón.
+  const form = document.getElementById("dedicatoria");
+  const respuesta = document.getElementById("respuesta");
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const boton = form.querySelector("button");
+    boton.disabled = true; respuesta.textContent = "Enviando…";
+    try {
+      const datos = Object.fromEntries(new FormData(form));
+      const r = await fetch(form.action, { method: "POST", body: JSON.stringify(datos),
+                                           headers: { "Content-Type": "application/json", Accept: "application/json" } });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || String(j.success) === "false") throw new Error();
+      form.reset();
+      respuesta.textContent = "Recibido. Gracias. Te escribiré pronto.";
+    } catch {
+      respuesta.textContent = "No se ha podido enviar. Inténtalo de nuevo en un momento.";
+    } finally { boton.disabled = false; }
+  });
+</script>
 </body>
 </html>
